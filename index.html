@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="抓抓乐">
+<meta name="theme-color" content="#1b1030">
+<meta name="description" content="抓抓乐 CLAW ROGUE：像素风抓娃娃机 Roguelite。点一下放爪，买配件组流派，闯过 8 台机。">
+<meta name="author" content="wilsonmah">
+<meta name="copyright" content="© 2026 wilsonmah. All Rights Reserved.">
+<title>抓抓乐 CLAW ROGUE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#120a22;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+body{display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#game{position:relative;background:#1b1030;box-shadow:0 0 0 4px #000,0 20px 60px rgba(0,0,0,.6)}
+#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#ui{position:absolute;left:0;top:0;width:180px;height:320px;transform-origin:0 0;color:#fff7ea;font-family:"Press Start 2P","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:7px;line-height:1.35;pointer-events:none}
+#ui .cn{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-weight:800}
+.hud{position:absolute;left:0;right:0;top:0;height:26px;display:flex;align-items:center;gap:4px;padding:0 4px;background:#2b1d4a;border-bottom:2px solid #000}
+.hud .m{font-size:6px;line-height:1.25;color:#ffcf40;min-width:34px}
+.hud .m b{display:block;font-size:7px;color:#fff7ea}
+.sc{flex:1;text-align:center}
+.sc .v{font-size:8px}
+.sc .v i{font-style:normal;color:#8fd3ff}
+.bar{height:4px;background:#000;margin-top:2px;border:1px solid #000}
+.bar u{display:block;height:100%;width:0;background:#7ed957;transition:width .3s}
+.res{font-size:6.5px;text-align:right;line-height:1.5}
+.res .c{color:#ffcf40}.res .g{color:#7ed957}
+.accrow{position:absolute;left:6px;right:6px;top:279px;height:20px;display:flex;gap:3px;justify-content:center;pointer-events:auto}
+.slot{width:30px;height:20px;border:2px solid #000;background:#3a2a5e;display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.slot.empty{background:#24183e;opacity:.6;font-size:6px;color:#8a7fb0}
+.tip{position:absolute;left:6px;right:6px;top:304px;text-align:center;font-size:6px;color:#bfb3e6}
+.tip.cn{font-size:7.5px}
+.pop{position:absolute;transform:translate(-50%,0);white-space:nowrap;font-size:8px;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000;animation:popup 1.1s steps(11) forwards;pointer-events:none}
+@keyframes popup{0%{opacity:0;transform:translate(-50%,6px)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-16px)}}
+.ov{position:absolute;inset:0;background:rgba(18,10,34,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;text-align:center;pointer-events:auto;transition:opacity .2s}
+.hide{opacity:0!important;pointer-events:none!important}
+.title{font-size:16px;color:#ff5fa2;text-shadow:2px 2px 0 #000,0 0 0 #000;line-height:1.3}
+.title small{display:block;font-size:7px;color:#ffcf40;margin-top:4px}
+.big{font-size:12px;color:#ffcf40;text-shadow:2px 2px 0 #000}
+.p{font-size:8px;line-height:1.7;color:#e6dcff}
+.p.s{font-size:7px;color:#bfb3e6}
+.btn{appearance:none;border:2px solid #000;background:#ff5fa2;color:#fff;font-family:inherit;font-size:9px;padding:6px 12px;box-shadow:0 3px 0 #000,inset 0 -3px 0 #b8326e;cursor:pointer}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #000,inset 0 -3px 0 #b8326e}
+.btn.y{background:#ffcf40;color:#2b1d2f;box-shadow:0 3px 0 #000,inset 0 -3px 0 #c98a00}
+.btn.g{background:#5a4a8a;box-shadow:0 3px 0 #000,inset 0 -3px 0 #3a2a5e}
+.btn[disabled]{filter:grayscale(1) brightness(.6)}
+.cards{display:flex;gap:4px;margin:2px 0}
+.card{width:52px;border:2px solid #000;background:#3a2a5e;padding:4px 3px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 3px 0 #000;cursor:pointer}
+.card .ic{font-size:16px;line-height:1.1}
+.card .n{font-size:7px;color:#ffcf40}
+.card .d{font-size:6px;line-height:1.35;color:#e6dcff;min-height:24px}
+.card .pr{font-size:7px;color:#7ed957}
+.card.sold{opacity:.25;pointer-events:none}
+.card.cant .pr{color:#ff6b6b}
+.owned{display:flex;gap:3px}
+.boss{color:#ff6b6b}
+.row{display:flex;gap:6px;align-items:center;justify-content:center}
+.brk{font-size:6.5px;line-height:1.8;color:#e6dcff;text-align:left;background:#24183e;border:2px solid #000;padding:4px 8px}
+.brk b{color:#ffcf40;float:right;margin-left:12px}
+.info{position:absolute;left:8px;right:8px;top:218px;background:#fff7ea;color:#2b1d2f;border:2px solid #000;padding:4px 6px;font-size:7px;line-height:1.5;box-shadow:0 3px 0 #000;pointer-events:none;transition:opacity .2s}
+.ban{position:absolute;left:0;right:0;top:110px;text-align:center;pointer-events:none;transition:opacity .4s}
+.ban div{display:inline-block;background:#000;border:2px solid #ff6b6b;padding:6px 10px;font-size:9px;color:#ff6b6b;box-shadow:0 0 0 2px #000}
+.ban p{font-size:7px;color:#fff7ea;margin-top:4px}
+.copy{font-size:5.5px;color:#8a7fb0;margin-top:6px}
+.snd{position:absolute;right:4px;top:30px;width:16px;height:14px;border:2px solid #000;background:#3a2a5e;font-size:7px;display:flex;align-items:center;justify-content:center;pointer-events:auto}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="cv"></canvas>
+  <div id="ui">
+    <div class="hud">
+      <div class="m cn" id="hMach">第 1 台<b>MACHINE</b></div>
+      <div class="sc"><div class="v" id="hScore">0<i>/30</i></div><div class="bar"><u id="hBar"></u></div></div>
+      <div class="res"><div class="c" id="hCoin">●×6</div><div class="g" id="hMoney">$4</div></div>
+    </div>
+    <div class="snd" id="snd">♪</div>
+    <div class="accrow" id="accrow"></div>
+    <div class="tip cn" id="tip">点击屏幕 · 放下爪子</div>
+    <div class="info cn hide" id="info"></div>
+    <div class="ban cn hide" id="ban"><div id="banT"></div><p id="banD"></p></div>
+    <div id="pops"></div>
+
+    <div class="ov" id="ovStart">
+      <div class="title">CLAW<br>ROGUE<small class="cn">抓 抓 乐</small></div>
+      <div class="p cn">点一下 放下爪子<br>在币用完前 抓够分数<br>买配件 组流派 闯 8 台机</div>
+      <button class="btn y" id="bStart">START</button>
+      <div class="p s cn" id="bestTxt"></div>
+      <div class="copy cn">© 2026 wilsonmah 版权所有</div>
+    </div>
+
+    <div class="ov hide" id="ovClear">
+      <div class="big cn" id="clrT">通关！</div>
+      <div class="brk cn" id="clrB"></div>
+      <button class="btn y cn" id="bShop">去小卖部</button>
+    </div>
+
+    <div class="ov hide" id="ovShop">
+      <div class="big cn">小卖部</div>
+      <div class="p cn" id="shopMoney">$0</div>
+      <div class="cards" id="cards"></div>
+      <div class="row"><button class="btn g cn" id="bReroll">刷新 $2</button><button class="btn y cn" id="bNext">下一台 ▶</button></div>
+      <div class="p s cn">已装配件（点按出售，半价）</div>
+      <div class="owned" id="owned"></div>
+    </div>
+
+    <div class="ov hide" id="ovOver">
+      <div class="big cn" id="ovrT">币用完了…</div>
+      <div class="p cn" id="ovrD"></div>
+      <div class="brk cn" id="ovrB"></div>
+      <button class="btn y cn" id="bRetry">再来一局</button>
+      <button class="btn g cn" id="bShare">喊朋友来抓</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*!
+ * 抓抓乐 CLAW ROGUE
+ * Copyright (c) 2026 wilsonmah. All Rights Reserved.
+ * 未经作者书面许可，禁止复制、修改、分发或商用本游戏的代码与设计。
+ */
+(() => {
+const $ = s => document.querySelector(s);
+const LW = 180, LH = 320;
+const cv = $('#cv'), ctx = cv.getContext('2d');
+cv.width = LW; cv.height = LH; ctx.imageSmoothingEnabled = false;
+const game = $('#game'), ui = $('#ui');
+function fit() {
+  const pad = 8, s = Math.min((innerWidth - pad) / LW, (innerHeight - pad) / LH);
+  game.style.width = LW * s + 'px'; game.style.height = LH * s + 'px';
+  ui.style.transform = `scale(${s})`;
+}
+addEventListener('resize', fit); fit();
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ============================================================ audio (chiptune)
+let ac, sndOn = store.get('cr_snd', true), master;
+function unlock() {
+  try {
+    if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = sndOn ? .5 : 0; master.connect(ac.destination); startBgm(); }
+    if (ac.state === 'suspended') ac.resume();
+  } catch (e) {}
+}
+function beep(f, d = .08, type = 'square', v = .06, slide = 0, delay = 0) {
+  if (!ac) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.linearRampToValueAtTime(Math.max(30, f + slide), t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + d + .02);
+}
+const S = {
+  coin: () => { beep(988, .06); beep(1319, .12, 'square', .06, 0, .06); },
+  drop: () => beep(220, .5, 'sawtooth', .025, -80),
+  clunk: () => { beep(110, .08, 'square', .08); beep(70, .1, 'triangle', .1); },
+  win: () => [523, 659, 784, 1047].forEach((f, i) => beep(f, .1, 'square', .05, 0, i * .07)),
+  fail: () => { beep(392, .12, 'square', .05, -100); beep(262, .2, 'square', .05, -80, .12); },
+  slip: () => beep(660, .35, 'triangle', .07, -500),
+  set: () => [784, 988, 1175, 1568].forEach((f, i) => beep(f, .09, 'square', .05, 0, i * .05)),
+  cash: () => { [1568, 2093].forEach((f, i) => beep(f, .08, 'square', .05, 0, i * .08)); beep(80, .15, 'triangle', .1, 0, .16); },
+  buy: () => beep(880, .1, 'square', .05, 400),
+  bad: () => beep(140, .15, 'square', .05),
+  over: () => [523, 466, 415, 392].forEach((f, i) => beep(f, .22, 'triangle', .07, 0, i * .2))
+};
+let bgmTimer;
+function startBgm() {
+  const bass = [130.8, 130.8, 174.6, 196], arp = [[523, 659, 784], [523, 659, 784], [698, 880, 1047], [784, 988, 1175]];
+  let step = 0, next = ac.currentTime + .1; const spb = .18;
+  bgmTimer = setInterval(() => {
+    while (next < ac.currentTime + .3) {
+      const bar = Math.floor(step / 8) % 4, b = step % 8;
+      const t = next - ac.currentTime;
+      if (b % 2 === 0) beep(bass[bar], .14, 'triangle', .05, 0, t);
+      if (Math.random() < .55) beep(arp[bar][(step * 7) % 3] * (Math.random() < .2 ? 2 : 1), .07, 'square', .012, 0, t);
+      next += spb; step++;
+    }
+  }, 120);
+}
+$('#snd').textContent = sndOn ? '♪' : '×';
+$('#snd').addEventListener('pointerdown', e => { e.stopPropagation(); unlock(); sndOn = !sndOn; store.set('cr_snd', sndOn); if (master) master.gain.value = sndOn ? .5 : 0; $('#snd').textContent = sndOn ? '♪' : '×'; });
+
+// ============================================================ pixel sprites
+const O = '#2b1d2f';
+function spr(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); fn(g, w, h); return c; }
+function px(g, x, y, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), 1, 1); }
+function shape(g, w, h, test, fill, outline = O) {
+  const inside = (x, y) => x >= 0 && y >= 0 && x < w && y < h && test(x + .5, y + .5);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (inside(x, y)) px(g, x, y, typeof fill === 'function' ? fill(x, y) : fill);
+    else if (outline && (inside(x + 1, y) || inside(x - 1, y) || inside(x, y + 1) || inside(x, y - 1))) px(g, x, y, outline);
+  }
+}
+const KINDS = {
+  duck: { name: '小鸭', pts: 6, w: 2, col: '#ffd94a', dk: '#e0a92a' },
+  frog: { name: '青蛙', pts: 8, w: 3, col: '#7ed957', dk: '#4fa83f' },
+  cat: { name: '猫咪', pts: 10, w: 4, col: '#ffb36b', dk: '#d9803f' },
+  bunny: { name: '兔兔', pts: 12, w: 4, col: '#ffe0ef', dk: '#e8a8c8' },
+  peng: { name: '企鹅', pts: 14, w: 5, col: '#3f5580', dk: '#26365a' },
+  bear: { name: '熊熊', pts: 16, w: 6, col: '#b9835a', dk: '#8a5a38' },
+  star: { name: '星星', pts: 30, w: 3, col: '#fff17a', dk: '#f0b400', rare: true },
+  egg: { name: '金蛋', pts: 60, w: 7, col: '#ffd23f', dk: '#c99400', rare: true },
+  big: { name: '大熊', pts: 45, w: 10, col: '#c98f62', dk: '#8a5a38', big: true },
+  rock: { name: '石头', pts: 0, w: 8, col: '#8d93a0', dk: '#5d6270', junk: true }
+};
+function face(g, cx, cy, big) {
+  const e = big ? 3.5 : 2.5;
+  px(g, cx - e, cy, O); px(g, cx + e, cy, O);
+  if (big) { px(g, cx - e, cy + 1, O); px(g, cx + e, cy + 1, O); }
+  px(g, cx - e - 1, cy + 2, '#ff8fb0'); px(g, cx + e + 1, cy + 2, '#ff8fb0');
+  px(g, cx - .5, cy + 2, O); if (big) px(g, cx + .5, cy + 2, O);
+}
+function makeSprite(k) {
+  const d = KINDS[k], N = d.big ? 24 : 16;
+  return spr(N, N, (g) => {
+    const cx = N / 2, cy = N / 2 + 1.5, r = d.big ? 9.2 : 6.2;
+    const shade = (x, y) => (x - cx) + (y - cy) * 1.2 > r * .55 ? d.dk : d.col;
+    const body = (x, y) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
+    let ears = () => false;
+    if (k === 'cat') ears = (x, y) => y > cy - r - 3.5 && y < cy - r + 3 && (Math.abs(x - (cx - 3.6)) < (y - (cy - r - 3.5)) * .55 || Math.abs(x - (cx + 3.6)) < (y - (cy - r - 3.5)) * .55);
+    if (k === 'bunny') ears = (x, y) => y > cy - r - 6 && y < cy - r + 2 && (Math.abs(x - (cx - 2.2)) < 1.3 || Math.abs(x - (cx + 2.2)) < 1.3);
+    if (k === 'bear' || k === 'big') { const er = d.big ? 3 : 2.2, ey = cy - r + (d.big ? 1.5 : 1), ex = r - (d.big ? 1.5 : 1.2); ears = (x, y) => (x - (cx - ex)) ** 2 + (y - ey) ** 2 < er * er || (x - (cx + ex)) ** 2 + (y - ey) ** 2 < er * er; }
+    if (k === 'frog') ears = (x, y) => (x - (cx - 3)) ** 2 + (y - (cy - r + .5)) ** 2 < 5 || (x - (cx + 3)) ** 2 + (y - (cy - r + .5)) ** 2 < 5;
+    if (k === 'star') {
+      const pts = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? 3.2 : 7.2; pts.push([cx + Math.cos(a) * rr, cy - .5 + Math.sin(a) * rr]); }
+      const inPoly = (x, y) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+      shape(g, N, N, inPoly, (x, y) => (x - cx) + (y - cy) > 2 ? d.dk : d.col);
+      face(g, cx, cy - .5, false); return;
+    }
+    if (k === 'egg') {
+      shape(g, N, N, (x, y) => ((x - cx) / 5.4) ** 2 + ((y - cy) / 6.8) ** 2 <= 1, (x, y) => (x - cx) + (y - cy) > 2.5 ? d.dk : d.col);
+      px(g, cx - 2, cy - 4, '#fffbe0'); px(g, cx - 3, cy - 3, '#fffbe0'); px(g, cx - 2, cy - 3, '#fffbe0');
+      for (let x = -4; x <= 4; x++) px(g, cx + x, cy + 1 + (x % 2 ? 1 : 0), '#e07a00');
+      return;
+    }
+    if (k === 'rock') {
+      shape(g, N, N, (x, y) => ((x - cx) / 6.6) ** 2 + ((y - cy - 1) / 4.8) ** 2 + Math.sin(x * 1.7) * .08 <= 1, (x, y) => (x - cx) + (y - cy) > 1.5 ? d.dk : d.col);
+      px(g, cx - 2, cy - 1, '#b8bdc8'); px(g, cx - 3, cy, '#b8bdc8'); px(g, cx + 2, cy + 2, '#4a4e57');
+      return;
+    }
+    shape(g, N, N, (x, y) => body(x, y) || ears(x, y), shade);
+    if (k === 'cat') { px(g, cx - 3.6, cy - r - .5, '#ff8fb0'); px(g, cx + 3.6, cy - r - .5, '#ff8fb0'); }
+    if (k === 'bunny') { for (let y = -4; y <= -1; y++) { px(g, cx - 2.2, cy - r + y + 1, '#ff9fc8'); px(g, cx + 2.2, cy - r + y + 1, '#ff9fc8'); } }
+    if (k === 'frog') { for (const s of [-1, 1]) { px(g, cx + s * 3, cy - r + .5, '#fff'); px(g, cx + s * 3, cy - r + 1.5, O); } }
+    if (k === 'peng') shape(g, N, N, (x, y) => ((x - cx) / 3.6) ** 2 + ((y - cy - 1.5) / 4.2) ** 2 <= 1, '#f4f1ff', null);
+    if (k === 'bear' || k === 'big') shape(g, N, N, (x, y) => ((x - cx) / (d.big ? 3.6 : 2.6)) ** 2 + ((y - cy - (d.big ? 3 : 2.2)) / (d.big ? 2.4 : 1.8)) ** 2 <= 1, '#f0d2b0', null);
+    face(g, cx, cy - (k === 'peng' ? 1 : 0), d.big);
+    if (k === 'duck') { px(g, cx - 1, cy + 2, '#ff8a2a'); px(g, cx, cy + 2, '#ff8a2a'); px(g, cx + 1, cy + 2, '#ff8a2a'); px(g, cx, cy - r - .5, O); px(g, cx + 1, cy - r - 1.5, O); }
+    if (k === 'peng') { px(g, cx - .5, cy + 1.5, '#ff9a2a'); }
+    px(g, cx - r * .5, cy - r * .55, 'rgba(255,255,255,.75)');
+  });
+}
+const SPR = {}; for (const k in KINDS) SPR[k] = makeSprite(k);
+const SIZE = k => KINDS[k].big ? 24 : 16;
+// visible half-width of sprite body (for collisions)
+const HALF = k => KINDS[k].big ? 10 : 7;
+
+// ============================================================ machine layout
+const RAIL = 38, FLOOR = 246, PIT_L = 46, PIT_R = 168, CHUTE_X = 25, CHUTE_TOP = 200;
+const bgCanvas = spr(LW, LH, g => {
+  g.fillStyle = '#1b1030'; g.fillRect(0, 0, LW, LH);
+  for (let y = 0; y < LH; y += 6) for (let x = (y / 6 % 2) * 3; x < LW; x += 6) px(g, x, y, '#24173f');
+  // machine body
+  g.fillStyle = '#000'; g.fillRect(3, 27, 174, 230);
+  g.fillStyle = '#ff5fa2'; g.fillRect(4, 28, 172, 228);
+  g.fillStyle = '#ff8cc0'; g.fillRect(4, 28, 172, 2); g.fillRect(4, 28, 2, 228);
+  g.fillStyle = '#b8326e'; g.fillRect(4, 254, 172, 2); g.fillRect(174, 28, 2, 228);
+  // glass cavity
+  g.fillStyle = '#000'; g.fillRect(9, 33, 162, 216);
+  for (let y = 34; y < 248; y++) { const t = (y - 34) / 214; g.fillStyle = `rgb(${Math.round(42 + t * 18)},${Math.round(30 + t * 10)},${Math.round(74 + t * 20)})`; g.fillRect(10, y, 160, 1); }
+  for (let x = 14; x < 168; x += 10) for (let y = 44; y < 196; y += 10) px(g, x, y, '#3d2e68');
+  // rail
+  g.fillStyle = '#9a9ab8'; g.fillRect(10, RAIL - 4, 160, 3); g.fillStyle = '#d8d8ef'; g.fillRect(10, RAIL - 4, 160, 1);
+  // floor
+  g.fillStyle = '#463a6e'; g.fillRect(42, FLOOR, 128, 2); g.fillStyle = '#2b2150'; g.fillRect(10, FLOOR + 2, 160, 1);
+  // chute
+  g.fillStyle = '#000'; g.fillRect(10, CHUTE_TOP, 31, 48);
+  g.fillStyle = '#0e0820'; g.fillRect(11, CHUTE_TOP + 1, 29, 46);
+  g.fillStyle = '#000'; g.fillRect(40, CHUTE_TOP - 2, 4, 50);
+  g.fillStyle = '#ffcf40'; g.fillRect(41, CHUTE_TOP - 1, 2, 48);
+  // base
+  g.fillStyle = '#c23c7f'; g.fillRect(4, 252, 172, 4);
+  g.fillStyle = '#000'; g.fillRect(3, 257, 174, 63);
+  g.fillStyle = '#7a2453'; g.fillRect(4, 258, 172, 62);
+  g.fillStyle = '#000'; g.fillRect(8, 259, 164, 19);
+  g.fillStyle = '#1a1030'; g.fillRect(9, 260, 162, 17);
+});
+// chute front panel (drawn above prizes)
+const chuteFront = spr(LW, LH, g => {
+  g.fillStyle = '#000'; g.fillRect(10, 230, 31, 18);
+  g.fillStyle = '#ffcf40'; g.fillRect(11, 231, 29, 16);
+  for (let x = 11; x < 40; x += 4) { g.fillStyle = '#2b1d2f'; g.fillRect(x, 231, 2, 2); }
+  // arrow
+  g.fillStyle = '#2b1d2f'; g.fillRect(24, 235, 3, 5); g.fillRect(22, 239, 7, 1); g.fillRect(23, 240, 5, 1); g.fillRect(24, 241, 3, 1); g.fillRect(25, 242, 1, 1);
+});
+
+// ============================================================ data
+const ACC = [
+  { id: 'spring', ic: '🌀', name: '强力弹簧', price: 4, desc: '爪力 +2，更抓得稳' },
+  { id: 'tri', ic: '🦀', name: '三指大爪', price: 5, desc: '抓取范围 +40%' },
+  { id: 'motor', ic: '🐢', name: '慢速马达', price: 4, desc: '爪子摆动慢 30%' },
+  { id: 'bearfan', ic: '🧸', name: '熊熊控', price: 5, desc: '抓到熊熊/大熊 倍率 +2' },
+  { id: 'soft', ic: '🎀', name: '软萌联盟', price: 5, desc: '抓到猫咪/兔兔 倍率 +1.5' },
+  { id: 'gear', ic: '⚙️', name: '连抓齿轮', price: 6, desc: '连续成功 每次倍率 +1，失手清零' },
+  { id: 'lucky', ic: '🍀', name: '幸运硬币', price: 5, desc: '每台第一次失手 退还 1 枚币' },
+  { id: 'shelf', ic: '🗄️', name: '收藏柜', price: 6, desc: '成套奖励 ×2（同款 3 只）' },
+  { id: 'magnet', ic: '🧲', name: '磁吸爪', price: 6, desc: '星星和金蛋 必定抓稳' },
+  { id: 'coin', ic: '🪙', name: '加币器', price: 7, desc: '每台多 1 枚币' },
+  { id: 'piggy', ic: '🐷', name: '存钱罐', price: 4, desc: '每台通关 额外 +$3' },
+  { id: 'recycle', ic: '♻️', name: '回收站', price: 4, desc: '石头也值 25 分' },
+  { id: 'lamp', ic: '💡', name: '招财灯', price: 5, desc: '每台多放 2 个稀有奖品' },
+  { id: 'tumbler', ic: '🪀', name: '弹弹球', price: 5, desc: '滑落的奖品 50% 弹进出口' },
+  { id: 'twin', ic: '✌️', name: '双子爪', price: 8, desc: '30% 顺带夹出旁边一只' },
+  { id: 'scale', ic: '⚖️', name: '称重秤', price: 5, desc: '重量 ≥6 的奖品 分数 ×1.5' },
+  { id: 'frenzy', ic: '🔥', name: '最后一搏', price: 6, desc: '用最后一枚币时 倍率 ×3' },
+  { id: 'duckking', ic: '👑', name: '鸭鸭国王', price: 5, desc: '每抓一只小鸭 本局所有小鸭 +4 分' }
+];
+const ACCM = Object.fromEntries(ACC.map(a => [a.id, a]));
+const BOSSES = [
+  { id: 'loose', name: '松爪机', desc: '爪力 -2，更容易滑落' },
+  { id: 'shaky', name: '狂摇机', desc: '爪子摆动快 60%' },
+  { id: 'eater', name: '吞币机', desc: '本台少 2 枚币' },
+  { id: 'rocky', name: '石头山', desc: '近一半奖品换成石头' }
+];
+const TARGETS = [25, 45, 75, 110, 150, 200, 270, 360];
+const targetOf = n => n <= 8 ? TARGETS[n - 1] : Math.round(360 * Math.pow(1.3, n - 8));
+const isBoss = n => n % 3 === 0 || n === 8;
+
+// ============================================================ state
+let run, M, claw, falling = [], parts = [], state = 'menu', tm = 0;
+const has = id => run.acc.includes(id);
+function stats() {
+  const s = { grip: 5, R: 9, sway: 1.7, coins: 6 };
+  if (has('spring')) s.grip += 2;
+  if (has('tri')) s.R *= 1.4;
+  if (has('motor')) s.sway *= .7;
+  if (has('coin')) s.coins += 1;
+  if (M && M.boss) { if (M.boss.id === 'loose') s.grip -= 2; if (M.boss.id === 'shaky') s.sway *= 1.6; if (M.boss.id === 'eater') s.coins -= 2; }
+  return s;
+}
+function newRun() {
+  run = { n: 1, money: 4, acc: [], duck: 0, grabbed: 0, total: 0 };
+  newMachine();
+}
+function newMachine() {
+  const n = run.n;
+  M = { n, target: targetOf(n), score: 0, coins: 0, prizes: [], bin: [], kinds: {}, combo: 0, refunded: false, boss: isBoss(n) ? pick(BOSSES) : null };
+  M.coins = stats().coins;
+  const pool = ['duck', 'duck', 'frog', 'frog', 'cat', 'cat', 'bunny', 'bunny', 'peng', 'bear', 'bear'];
+  const N = 22 + Math.min(8, n);
+  const kinds = [];
+  for (let i = 0; i < N; i++) {
+    const r = Math.random();
+    let k = r < .07 ? pick(['star', 'egg']) : r < .14 ? 'big' : r < .2 ? 'rock' : pick(pool);
+    if (M.boss && M.boss.id === 'rocky' && Math.random() < .45) k = 'rock';
+    kinds.push(k);
+  }
+  if (has('lamp')) kinds.push(pick(['star', 'egg']), pick(['star', 'egg', 'star']));
+  kinds.sort(() => Math.random() - .5);
+  // heavy stuff tends to sit at the bottom
+  kinds.sort((a, b) => (KINDS[b].big ? 1 : 0) - (KINDS[a].big ? 1 : 0));
+  for (const k of kinds) {
+    const h = HALF(k), x = rand(PIT_L + h, PIT_R - h);
+    const p = { k, x, y: 0, vy: 0 };
+    p.y = heapTop(x, h, M.prizes) - SIZE(k) + 2;
+    M.prizes.push(p);
+  }
+  claw = { x: (PIT_L + PIT_R) / 2, y: RAIL, open: 1, ph: Math.random() * 6, st: 'aim', carry: [], t: 0, slipAt: null };
+  state = 'play';
+  hud();
+  if (M.boss) banner('BOSS · ' + M.boss.name, M.boss.desc);
+  else banner(`第 ${n} 台`, `目标 ${M.target} 分 · ${M.coins} 枚币`);
+}
+function heapTop(x, h, list, except) {
+  let top = FLOOR;
+  for (const q of list) { if (q === except || q.held) continue; if (Math.abs(q.x - x) < (HALF(q.k) + h) * .75) top = Math.min(top, q.y + 3); }
+  return top;
+}
+function settle() {
+  const list = M.prizes.slice().sort((a, b) => b.y - a.y), done = [];
+  for (const p of list) {
+    const ty = heapTop(p.x, HALF(p.k), done) - SIZE(p.k) + 2;
+    if (ty > p.y + .5) p.fall = ty;
+    done.push(Object.assign({}, p, { y: Math.max(p.y, ty) }));
+  }
+}
+
+// ============================================================ HUD / UI
+function hud() {
+  if (!M) return;
+  $('#hMach').innerHTML = `第 ${M.n} 台<b class="${M.boss ? 'boss' : ''}">${M.boss ? M.boss.name : (M.n > 8 ? '无尽' : 'MACHINE')}</b>`;
+  $('#hScore').innerHTML = `${M.score}<i>/${M.target}</i>`;
+  $('#hBar').style.width = Math.min(100, M.score / M.target * 100) + '%';
+  $('#hCoin').textContent = '●×' + M.coins;
+  $('#hMoney').textContent = '$' + run.money;
+  const row = $('#accrow'); row.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const a = run.acc[i], d = document.createElement('div');
+    d.className = 'slot' + (a ? '' : ' empty'); d.textContent = a ? ACCM[a].ic : '空';
+    if (a) d.addEventListener('pointerdown', e => { e.stopPropagation(); showInfo(`${ACCM[a].ic} ${ACCM[a].name}：${ACCM[a].desc}`); });
+    row.appendChild(d);
+  }
+}
+function showInfo(t) { const el = $('#info'); el.textContent = t; el.classList.remove('hide'); clearTimeout(showInfo.t); showInfo.t = setTimeout(() => el.classList.add('hide'), 2200); }
+function banner(t, d) { $('#banT').textContent = t; $('#banD').textContent = d; const b = $('#ban'); b.classList.remove('hide'); clearTimeout(banner.t); banner.t = setTimeout(() => b.classList.add('hide'), 1800); }
+function pop(x, y, txt, col = '#fff7ea', cn = true) {
+  const d = document.createElement('div'); d.className = 'pop' + (cn ? ' cn' : ''); d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.color = col; d.textContent = txt;
+  $('#pops').appendChild(d); setTimeout(() => d.remove(), 1150);
+}
+function show(id) { for (const o of ['#ovStart', '#ovClear', '#ovShop', '#ovOver']) $(o).classList.toggle('hide', o !== id); }
+function burst(x, y, cols, n = 18) { for (let i = 0; i < n; i++) parts.push({ x, y, vx: rand(-60, 60), vy: rand(-90, -20), life: rand(.5, 1), c: pick(cols) }); }
+
+// ============================================================ claw logic
+function drop() {
+  if (state !== 'play' || claw.st !== 'aim' || M.coins <= 0) return;
+  unlock();
+  M.coins--; M.lastCoin = M.coins === 0; hud(); S.coin(); setTimeout(S.drop, 120);
+  claw.st = 'drop';
+  const s = stats(), tgt = topUnder(claw.x, s.R);
+  claw.dropY = tgt ? tgt.y - 8 : FLOOR - 14;
+  $('#tip').textContent = '…';
+}
+function topUnder(x, R) {
+  let best = null;
+  for (const p of M.prizes) { if (p.held) continue; if (Math.abs(p.x - x) < R + HALF(p.k) * .45) if (!best || p.y < best.y) best = p; }
+  return best;
+}
+function resolveGrab() {
+  const s = stats(), p = topUnder(claw.x, s.R);
+  S.clunk();
+  if (!p) { fail('空抓…'); return; }
+  const d = KINDS[p.k], reach = s.R + HALF(p.k) * .45, dx = Math.abs(p.x - claw.x);
+  const align = 1 - .6 * (dx / reach) ** 2;
+  const sure = has('magnet') && d.rare;
+  const pGrab = sure ? 1 : clamp(.25 + .6 * s.grip / d.w, .05, .96) * align;
+  if (Math.random() > pGrab) { fail('没夹住！'); wobble(p); return; }
+  p.held = true; claw.carry = [p];
+  if (has('twin') && Math.random() < .3) {
+    let nb = null; for (const q of M.prizes) if (!q.held && q !== p && Math.abs(q.x - p.x) < 20 && Math.abs(q.y - p.y) < 14) if (!nb || Math.abs(q.x - p.x) < Math.abs(nb.x - p.x)) nb = q;
+    if (nb) { nb.held = true; claw.carry.push(nb); pop(claw.x, claw.y + 4, '双子爪！', '#8fd3ff'); }
+  }
+  const slipP = sure ? 0 : clamp(.38 * d.w / Math.max(1, s.grip) - .12, 0, .85);
+  claw.slipAt = Math.random() < slipP ? rand(RAIL + 10, claw.y - 12) : null;
+}
+function wobble(p) { p.wob = .4; }
+function fail(msg) {
+  M.combo = 0; S.fail();
+  pop(claw.x, claw.y + 6, msg, '#ff8a8a');
+  if (has('lucky') && !M.refunded) { M.refunded = true; M.coins++; hud(); setTimeout(() => pop(140, 30, '幸运币 +1', '#7ed957'), 300); }
+}
+function slip() {
+  const p = claw.carry.shift(); p.held = false; S.slip();
+  if (has('tumbler') && Math.random() < .5) {
+    pop(claw.x, claw.y + 10, '弹进去了！', '#7ed957');
+    falling.push({ p, x: p.x, y: p.y, vx: (CHUTE_X - p.x) / .7, vy: -70, toChute: true });
+    M.prizes.splice(M.prizes.indexOf(p), 1);
+  } else {
+    pop(claw.x, claw.y + 10, '滑落！', '#ff8a8a');
+    M.combo = 0;
+    if (has('lucky') && !M.refunded) { M.refunded = true; M.coins++; hud(); setTimeout(() => pop(140, 30, '幸运币 +1', '#7ed957'), 300); }
+    p.x = clamp(p.x + rand(-10, 10), PIT_L + 6, PIT_R - 6);
+    p.fall = heapTop(p.x, HALF(p.k), M.prizes, p) - SIZE(p.k) + 2;
+  }
+  claw.slipAt = null;
+}
+function score(p) {
+  const d = KINDS[p.k];
+  let chips = d.pts, mult = 1;
+  if (p.k === 'duck') { chips += run.duck; if (has('duckking')) run.duck += 4; }
+  if (p.k === 'rock' && has('recycle')) chips += 25;
+  if (has('scale') && d.w >= 6) chips = Math.round(chips * 1.5);
+  if (has('bearfan') && (p.k === 'bear' || p.k === 'big')) mult += 2;
+  if (has('soft') && (p.k === 'cat' || p.k === 'bunny')) mult += 1.5;
+  if (has('gear')) mult += M.combo;
+  if (has('frenzy') && M.lastCoin) mult *= 3;
+  M.combo++;
+  const gain = Math.round(chips * mult);
+  M.score += gain; run.total += gain; run.grabbed++;
+  M.bin.push(p.k);
+  pop(CHUTE_X + 8, CHUTE_TOP - 22, `${chips}×${+mult.toFixed(1)}`, '#8fd3ff', false);
+  setTimeout(() => pop(CHUTE_X + 14, CHUTE_TOP - 12, '+' + gain, '#ffcf40', false), 180);
+  M.kinds[p.k] = (M.kinds[p.k] || 0) + 1;
+  if (!d.junk && M.kinds[p.k] % 3 === 0) {
+    const b = 25 * (has('shelf') ? 2 : 1);
+    M.score += b; run.total += b;
+    setTimeout(() => { pop(90, 120, `${d.name}成套！+${b}`, '#ff5fa2'); S.set(); }, 420);
+  }
+  S.win(); burst(CHUTE_X + 6, CHUTE_TOP + 8, [d.col, '#ffcf40', '#fff7ea', '#ff5fa2']);
+  hud();
+}
+function checkEnd() {
+  if (state !== 'play' || claw.st !== 'aim' || falling.length) return;
+  if (M.score >= M.target) { state = 'clear'; setTimeout(clearMachine, 500); }
+  else if (M.coins <= 0) { state = 'over'; setTimeout(gameOver, 700); }
+  else $('#tip').textContent = M.coins === 1 ? '最后一枚币！' : '点击屏幕 · 放下爪子';
+}
+
+// ============================================================ flow screens
+function clearMachine() {
+  S.cash();
+  const base = 3, left = M.coins, interest = Math.min(5, Math.floor(run.money / 5)), pig = has('piggy') ? 3 : 0, boss = M.boss ? 2 : 0;
+  const total = base + left + interest + pig + boss;
+  run.money += total; hud();
+  $('#clrT').textContent = M.n === 8 ? '🏆 通关全部 8 台！' : `第 ${M.n} 台 通关！`;
+  $('#clrB').innerHTML = `过关奖励<b>$${base}</b><br>剩余币 ×${left}<b>$${left}</b><br>利息（每$5得$1）<b>$${interest}</b>` + (boss ? `<br>BOSS 奖励<b>$${boss}</b>` : '') + (pig ? `<br>🐷 存钱罐<b>$${pig}</b>` : '') + `<br>合计<b>$${total}</b>`;
+  if (M.n === 8) store.set('cr_won', true);
+  const best = store.get('cr_best', 0); if (M.n > best) store.set('cr_best', M.n);
+  show('#ovClear');
+}
+let offers = [], rerollCost = 2;
+function openShop() {
+  rerollCost = 2; rollOffers(); renderShop(); show('#ovShop');
+}
+function rollOffers() {
+  const avail = ACC.filter(a => !run.acc.includes(a.id)).sort(() => Math.random() - .5);
+  offers = avail.slice(0, 3).map(a => ({ ...a, sold: false }));
+}
+function renderShop() {
+  $('#shopMoney').textContent = `余额 $${run.money}`;
+  const cards = $('#cards'); cards.innerHTML = '';
+  offers.forEach(o => {
+    const c = document.createElement('div'); c.className = 'card cn' + (o.sold ? ' sold' : '') + (run.money < o.price ? ' cant' : '');
+    c.innerHTML = `<div class="ic">${o.ic}</div><div class="n">${o.name}</div><div class="d">${o.desc}</div><div class="pr">$${o.price}</div>`;
+    c.onclick = () => {
+      if (o.sold) return;
+      if (run.acc.length >= 5) { S.bad(); flashMsg('配件满了，先卖掉一个'); return; }
+      if (run.money < o.price) { S.bad(); flashMsg('钱不够'); return; }
+      run.money -= o.price; run.acc.push(o.id); o.sold = true; S.buy(); renderShop(); hud();
+    };
+    cards.appendChild(c);
+  });
+  $('#bReroll').textContent = `刷新 $${rerollCost}`; $('#bReroll').disabled = run.money < rerollCost;
+  const ow = $('#owned'); ow.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const id = run.acc[i], d = document.createElement('div'); d.className = 'slot' + (id ? '' : ' empty'); d.style.pointerEvents = 'auto';
+    d.textContent = id ? ACCM[id].ic : '空';
+    if (id) d.onclick = () => { const a = ACCM[id]; run.money += Math.floor(a.price / 2); run.acc.splice(run.acc.indexOf(id), 1); S.cash(); renderShop(); hud(); };
+    ow.appendChild(d);
+  }
+}
+function flashMsg(t) { const el = $('#shopMoney'); el.textContent = t; el.style.color = '#ff8a8a'; setTimeout(() => { el.style.color = ''; renderShop(); }, 900); }
+function gameOver() {
+  S.over();
+  const best = Math.max(store.get('cr_best', 0), M.n - 1); store.set('cr_best', best);
+  $('#ovrT').textContent = '币用完了…';
+  const lack = M.target - M.score;
+  $('#ovrD').textContent = lack <= M.target * .15 ? `只差 ${lack} 分！就差一点点` : `第 ${M.n} 台 · 还差 ${lack} 分`;
+  $('#ovrB').innerHTML = `闯到<b>第 ${M.n} 台</b><br>抓到奖品<b>${run.grabbed} 只</b><br>总得分<b>${run.total}</b><br>最佳纪录<b>第 ${Math.max(best, 1)} 台</b>`;
+  show('#ovOver');
+}
+async function share() {
+  const url = location.href.split('#')[0].split('?')[0];
+  const n = M ? M.n : 1;
+  const text = `我在「抓抓乐」闯到第 ${n} 台娃娃机，抓了 ${run ? run.grabbed : 0} 只！你能抓过我吗？`;
+  if (navigator.share) { try { await navigator.share({ title: '抓抓乐 CLAW ROGUE', text, url }); } catch (e) {} }
+  else { try { await navigator.clipboard.writeText(text + ' ' + url); $('#ovrD').textContent = '链接已复制！'; } catch (e) {} }
+}
+
+// ============================================================ update & draw
+function update(dt) {
+  tm += dt;
+  for (const q of parts) { q.vy += 220 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt; }
+  parts = parts.filter(q => q.life > 0);
+  if (!M) return;
+  // settling prizes
+  for (const p of M.prizes) {
+    if (p.fall != null) { p.vy = (p.vy || 0) + 400 * dt; p.y += p.vy * dt; if (p.y >= p.fall) { p.y = p.fall; p.fall = null; p.vy = 0; } }
+    if (p.wob) p.wob = Math.max(0, p.wob - dt);
+  }
+  // flying prizes (into chute)
+  for (const f of falling) {
+    f.vy += 300 * dt; f.x += (f.vx || 0) * dt; f.y += f.vy * dt;
+    if (f.toChute && f.x <= CHUTE_X + 2) { f.x = CHUTE_X; f.vx = 0; }
+    if (f.y > CHUTE_TOP + 30) { f.done = true; score(f.p); }
+  }
+  falling = falling.filter(f => !f.done);
+  if (state !== 'play' && state !== 'clear' && state !== 'over') return;
+  const s = stats();
+  const c = claw;
+  if (c.st === 'aim') {
+    c.ph += dt * s.sway;
+    const mid = (PIT_L + PIT_R) / 2, amp = (PIT_R - PIT_L) / 2 - 4;
+    c.x = mid + Math.sin(c.ph) * amp; c.open = 1; c.y = RAIL;
+    checkEnd();
+  } else if (c.st === 'drop') {
+    c.y += 160 * dt; if (c.y >= c.dropY) { c.y = c.dropY; c.st = 'close'; c.t = 0; }
+  } else if (c.st === 'close') {
+    c.t += dt; c.open = Math.max(0, 1 - c.t / .25);
+    if (c.t >= .3) { resolveGrab(); c.st = 'rise'; }
+  } else if (c.st === 'rise') {
+    c.y -= 105 * dt;
+    if (c.carry.length && c.slipAt != null && c.y <= c.slipAt) slip();
+    if (c.y <= RAIL) { c.y = RAIL; c.st = c.carry.length ? 'carry' : 'back'; if (!c.carry.length) settle(); }
+  } else if (c.st === 'carry') {
+    c.x -= 120 * dt;
+    if (c.x <= CHUTE_X) {
+      c.x = CHUTE_X; c.open = 1;
+      for (const p of c.carry) { p.held = false; M.prizes.splice(M.prizes.indexOf(p), 1); falling.push({ p, x: c.x, y: c.y + 9, vy: 0 }); }
+      c.carry = []; c.st = 'back'; c.t = 0; settle();
+    }
+  } else if (c.st === 'back') {
+    c.open = 1;
+    const mid = (PIT_L + PIT_R) / 2, amp = (PIT_R - PIT_L) / 2 - 4, tx = mid + Math.sin(c.ph) * amp;
+    c.x += clamp(tx - c.x, -150 * dt, 150 * dt);
+    if (Math.abs(tx - c.x) < 1) c.st = 'aim';
+  }
+  // carried prizes follow claw
+  c.carry.forEach((p, i) => { p.x = c.x + (i ? 8 : 0); p.y = c.y + 9 + (KINDS[p.k].big ? -2 : 0); });
+}
+function line(x0, y0, x1, y1, col) {
+  x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy;
+  ctx.fillStyle = col;
+  for (;;) { ctx.fillRect(x0, y0, 1, 1); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } }
+}
+function drawPrize(p) {
+  const N = SIZE(p.k), wob = p.wob ? Math.round(Math.sin(tm * 50) * 1) : 0;
+  ctx.drawImage(SPR[p.k], Math.round(p.x - N / 2) + wob, Math.round(p.y));
+}
+function drawClaw() {
+  const c = claw, x = Math.round(c.x), y = Math.round(c.y);
+  // trolley
+  ctx.fillStyle = '#000'; ctx.fillRect(x - 6, RAIL - 6, 13, 5); ctx.fillStyle = '#c9c9e0'; ctx.fillRect(x - 5, RAIL - 5, 11, 3);
+  // cable
+  ctx.fillStyle = '#d8d8ef'; ctx.fillRect(x, RAIL - 1, 1, y - RAIL + 1);
+  // head
+  ctx.fillStyle = '#000'; ctx.fillRect(x - 5, y, 11, 6); ctx.fillStyle = '#e0e0f0'; ctx.fillRect(x - 4, y + 1, 9, 4); ctx.fillStyle = '#9a9ab8'; ctx.fillRect(x - 4, y + 4, 9, 1);
+  ctx.fillStyle = '#ff5fa2'; ctx.fillRect(x - 1, y + 2, 3, 1);
+  // prongs
+  const o = c.open, sp = 2 + o * 4;
+  for (const s of [-1, 1]) {
+    const ax = x + s * 3, ay = y + 6, mx = x + s * (3 + sp), my = y + 11, tx = x + s * (1 + sp * .5), ty = y + 15;
+    line(ax, ay, mx, my, '#2b1d2f'); line(ax + s, ay, mx + s, my, '#c9c9e0');
+    line(mx, my, tx, ty, '#2b1d2f'); line(mx + s, my, tx + s, ty, '#c9c9e0');
+  }
+  line(x, y + 6, x, y + 12 + (1 - o) * 2, '#c9c9e0');
+}
+function draw() {
+  ctx.drawImage(bgCanvas, 0, 0);
+  // blinking bulbs
+  for (let i = 0; i < 21; i++) { const on = (Math.floor(tm * 4) + i) % 3 === 0; ctx.fillStyle = '#000'; ctx.fillRect(7 + i * 8, 28, 4, 4); ctx.fillStyle = on ? '#fff17a' : '#a8326e'; ctx.fillRect(8 + i * 8, 29, 2, 2); }
+  if (M) {
+    for (const p of M.prizes) if (!p.held) drawPrize(p);
+    for (const f of falling) drawPrize({ k: f.p.k, x: f.x, y: f.y });
+    if (state !== 'menu') { for (const p of claw.carry) drawPrize(p); drawClaw(); }
+    // aim guide
+    if (claw.st === 'aim' && state === 'play') { ctx.fillStyle = 'rgba(255,255,255,.12)'; for (let y = RAIL + 18; y < FLOOR; y += 4) ctx.fillRect(Math.round(claw.x), y, 1, 2); }
+  }
+  ctx.drawImage(chuteFront, 0, 0);
+  // glass shine
+  ctx.fillStyle = 'rgba(255,255,255,.05)';
+  for (let i = 0; i < 26; i++) { ctx.fillRect(120 + i, 40 + i * 6, 3, 6); ctx.fillRect(134 + i, 40 + i * 6, 1, 6); }
+  // prize bin (collected this machine)
+  if (M) M.bin.slice(-10).forEach((k, i) => ctx.drawImage(SPR[k], 10 + i * 16, 261, 16, 16));
+  for (const q of parts) { ctx.fillStyle = q.c; ctx.fillRect(Math.round(q.x), Math.round(q.y), 2, 2); }
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; update(dt); draw(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+
+// ============================================================ input & wiring
+game.addEventListener('pointerdown', e => { if (e.target.closest('.btn,.card,.slot,.snd')) return; if (state === 'play') { e.preventDefault(); drop(); } });
+addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); if (state === 'play') drop(); } });
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+$('#bStart').onclick = () => { unlock(); show(null); newRun(); };
+$('#bShop').onclick = () => { openShop(); };
+$('#bReroll').onclick = () => { if (run.money < rerollCost) return; run.money -= rerollCost; rerollCost++; rollOffers(); S.buy(); renderShop(); hud(); };
+$('#bNext').onclick = () => { show(null); run.n++; newMachine(); };
+$('#bRetry').onclick = () => { show(null); newRun(); };
+$('#bShare').onclick = share;
+const best = store.get('cr_best', 0);
+$('#bestTxt').textContent = best ? `最佳纪录：第 ${best} 台` + (store.get('cr_won', false) ? ' · 已通关 🏆' : '') : '新手提示：重的奖品容易滑落';
+// demo pit behind the menu
+run = { n: 1, money: 4, acc: [], duck: 0, grabbed: 0, total: 0 };
+M = { n: 1, target: 30, score: 0, coins: 6, prizes: [], bin: [], kinds: {}, combo: 0 };
+for (let i = 0; i < 18; i++) { const k = pick(['duck', 'frog', 'cat', 'bunny', 'peng', 'bear', 'star', 'big']); const h = HALF(k), x = rand(PIT_L + h, PIT_R - h); M.prizes.push({ k, x, y: heapTop(x, h, M.prizes) - SIZE(k) + 2 }); }
+claw = { x: 100, y: RAIL, open: 1, ph: 0, st: 'aim', carry: [], t: 0 };
+state = 'menu';
+})();
+</script>
+</body>
+</html>
