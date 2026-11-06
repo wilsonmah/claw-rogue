@@ -53,6 +53,11 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 .btn.g{background:#5a4a8a;box-shadow:0 3px 0 #000,inset 0 -3px 0 #3a2a5e}
 .btn[disabled]{filter:grayscale(1) brightness(.6)}
 #ovStart .btn.hide{display:none}
+#ovOver{gap:5px}
+#ovOver .brk{line-height:1.6;padding:3px 8px}
+.btn.rb{width:150px;font-size:8px;padding:5px 6px;line-height:1.3}
+.btn.rb small{display:block;font-size:6px;opacity:.85;margin-top:2px;font-weight:400}
+.btn.sm{font-size:7px;padding:4px 10px}
 #bCont small{display:block;font-size:6.5px;margin-top:3px;opacity:.8}
 .cards{display:flex;gap:4px;margin:2px 0}
 .card{width:52px;border:2px solid #000;background:#3a2a5e;padding:4px 3px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 3px 0 #000;cursor:pointer}
@@ -93,7 +98,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 
     <div class="ov" id="ovStart">
       <div class="title">CLAW<br>ROGUE<small class="cn">抓 抓 乐</small></div>
-      <div class="p cn">点一下 放下爪子<br>在币用完前 抓够分数<br>买配件 组流派 闯 8 台机<br><span style="font-size:6.5px;opacity:.7">进度自动保存，随时退出</span></div>
+      <div class="p cn">点一下 放下爪子<br>在币用完前 抓够分数<br>买配件 组流派 闯 8 台机<br><span style="font-size:6.5px;opacity:.7">进度自动保存 · 失败可读档</span></div>
       <button class="btn y cn hide" id="bCont">▶ 继续</button>
       <button class="btn y" id="bStart">START</button>
       <div class="p s cn" id="bestTxt"></div>
@@ -119,8 +124,10 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
       <div class="big cn" id="ovrT">币用完了…</div>
       <div class="p cn" id="ovrD"></div>
       <div class="brk cn" id="ovrB"></div>
-      <button class="btn y cn" id="bRetry">再来一局</button>
-      <button class="btn g cn" id="bShare">喊朋友来抓</button>
+      <button class="btn y cn rb" id="bPay"></button>
+      <button class="btn cn rb" id="bClear"></button>
+      <button class="btn g cn rb" id="bRetry">🔄 从第 1 台重新开始</button>
+      <button class="btn g cn sm" id="bShare">喊朋友来抓</button>
     </div>
   </div>
 </div>
@@ -361,7 +368,9 @@ function resumeRun(d) {
   falling = []; parts = [];
   claw = { x: (PIT_L + PIT_R) / 2, y: RAIL, open: 1, ph: Math.random() * 6, st: 'aim', carry: [], t: 0, slipAt: null };
   hud();
-  if (d.phase === 'shop') {
+  if (d.phase === 'over') {
+    state = 'over'; showOver();
+  } else if (d.phase === 'shop') {
     offers = (d.offers || []).map(o => ({ ...ACCM[o.id], sold: o.sold })).filter(o => o.id);
     if (!offers.length) rollOffers();
     rerollCost = d.rerollCost || 2; state = 'shop';
@@ -589,14 +598,32 @@ function renderShop() {
   }
 }
 function flashMsg(t) { const el = $('#shopMoney'); el.textContent = t; el.style.color = '#ff8a8a'; setTimeout(() => { el.style.color = ''; renderShop(); }, 900); }
+const retryCost = () => 2 + M.n;
 function gameOver() {
-  S.over(); clearRun();
+  S.over();
   const best = Math.max(store.get('cr_best', 0), M.n - 1); store.set('cr_best', best);
+  state = 'over'; saveRun('over');
+  showOver();
+}
+function showOver() {
+  const best = Math.max(store.get('cr_best', 0), 1);
   $('#ovrT').textContent = '币用完了…';
   const lack = M.target - M.score;
   $('#ovrD').textContent = lack <= M.target * .15 ? `只差 ${lack} 分！就差一点点` : `第 ${M.n} 台 · 还差 ${lack} 分`;
-  $('#ovrB').innerHTML = `闯到<b>第 ${M.n} 台</b><br>抓到奖品<b>${run.grabbed} 只</b><br>总得分<b>${run.total}</b><br>最佳纪录<b>第 ${Math.max(best, 1)} 台</b>`;
+  $('#ovrB').innerHTML = `闯到<b>第 ${M.n} 台</b><br>抓到奖品<b>${run.grabbed} 只</b><br>余额<b>$${run.money}</b><br>最佳纪录<b>第 ${best} 台</b>`;
+  const c = retryCost(), can = run.money >= c, n = run.acc.length;
+  const bp = $('#bPay');
+  bp.innerHTML = `💰 花 $${c} 读档重来<small>${can ? `保留全部 ${n} 件配件 · 留在第 ${M.n} 台` : `钱不够（还差 $${c - run.money}）`}</small>`;
+  bp.disabled = !can;
+  $('#bClear').innerHTML = n ? `🧺 清空配件 再挑战<small>失去 ${n} 件配件 · 免费 · 留在第 ${M.n} 台</small>` : `🧺 空手再挑战<small>免费 · 留在第 ${M.n} 台</small>`;
   show('#ovOver');
+}
+function retryMachine(mode) {
+  if (mode === 'pay') { const c = retryCost(); if (run.money < c) return; run.money -= c; }
+  else { run.acc = []; run.duck = 0; }
+  run.retries = (run.retries || 0) + 1;
+  S.buy(); show(null); newMachine();
+  banner(mode === 'pay' ? '读档成功！' : '轻装上阵！', `第 ${M.n} 台 · 目标 ${M.target} 分`);
 }
 async function share() {
   const url = location.href.split('#')[0].split('?')[0];
@@ -721,7 +748,9 @@ $('#bCont').onclick = () => { const d = loadRun(); if (!d) return; unlock(); res
 $('#bShop').onclick = () => { openShop(); };
 $('#bReroll').onclick = () => { if (run.money < rerollCost) return; run.money -= rerollCost; rerollCost++; rollOffers(); S.buy(); renderShop(); hud(); saveRun('shop'); };
 $('#bNext').onclick = () => { show(null); run.n++; newMachine(); };
-$('#bRetry').onclick = () => { clearRun(); show(null); newRun(); };
+$('#bRetry').onclick = () => { if (!confirm('从第 1 台重新开始？当前的配件和进度都会清空。')) return; clearRun(); show(null); newRun(); };
+$('#bPay').onclick = () => retryMachine('pay');
+$('#bClear').onclick = () => { if (run.acc.length && !confirm(`确定清空 ${run.acc.length} 件配件，再挑战第 ${M.n} 台吗？`)) return; retryMachine('clear'); };
 $('#bShare').onclick = share;
 const best = store.get('cr_best', 0);
 $('#bestTxt').textContent = best ? `最佳纪录：第 ${best} 台` + (store.get('cr_won', false) ? ' · 已通关 🏆' : '') : '新手提示：重的奖品容易滑落';
@@ -735,7 +764,7 @@ state = 'menu';
   const d = loadRun();
   if (!d) return;
   const b = $('#bCont');
-  b.innerHTML = `▶ 继续 · 第 ${d.M.n} 台<small>${d.phase === 'shop' ? '在小卖部' : `${d.M.score}/${d.M.target} 分 · 剩 ${d.M.coins} 枚币`} · $${d.run.money}</small>`;
+  b.innerHTML = `▶ 继续 · 第 ${d.M.n} 台<small>${d.phase === 'over' ? '挑战失败 · 选择怎么继续' : d.phase === 'shop' ? '在小卖部' : `${d.M.score}/${d.M.target} 分 · 剩 ${d.M.coins} 枚币`} · $${d.run.money}</small>`;
   b.classList.remove('hide');
   $('#bStart').textContent = 'NEW GAME';
 })();
