@@ -52,7 +52,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 .btn.y{background:#ffcf40;color:#2b1d2f;box-shadow:0 3px 0 #000,inset 0 -3px 0 #c98a00}
 .btn.g{background:#5a4a8a;box-shadow:0 3px 0 #000,inset 0 -3px 0 #3a2a5e}
 .btn[disabled]{filter:grayscale(1) brightness(.6)}
-#ovStart .btn.hide{display:none}
+#ovStart .btn.hide,#ovClear .btn.hide{display:none}
 #ovOver{gap:5px}
 #ovOver .brk{line-height:1.6;padding:3px 8px}
 .btn.rb{width:150px;font-size:8px;padding:5px 6px;line-height:1.3}
@@ -98,7 +98,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 
     <div class="ov" id="ovStart">
       <div class="title">CLAW<br>ROGUE<small class="cn">抓 抓 乐</small></div>
-      <div class="p cn">点一下 放下爪子<br>在币用完前 抓够分数<br>买配件 组流派 闯 8 台机<br><span style="font-size:6.5px;opacity:.7">进度自动保存 · 失败可读档</span></div>
+      <div class="p cn">点一下 放下爪子<br>在币用完前 抓够分数<br>买配件 组流派 闯 15 台机<br><span style="font-size:6.5px;opacity:.7">进度自动保存 · 失败可读档</span></div>
       <button class="btn y cn hide" id="bCont">▶ 继续</button>
       <button class="btn y" id="bStart">START</button>
       <div class="p s cn" id="bestTxt"></div>
@@ -109,6 +109,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
       <div class="big cn" id="clrT">通关！</div>
       <div class="brk cn" id="clrB"></div>
       <button class="btn y cn" id="bShop">去小卖部</button>
+      <button class="btn g cn sm hide" id="bShare2">喊朋友来抓</button>
     </div>
 
     <div class="ov hide" id="ovShop">
@@ -279,42 +280,112 @@ const HALF = k => KINDS[k].big ? 10 : 7;
 
 // ============================================================ machine layout
 const RAIL = 38, FLOOR = 246, PIT_L = 46, PIT_R = 168, CHUTE_X = 25, CHUTE_TOP = 200;
-const bgCanvas = spr(LW, LH, g => {
-  g.fillStyle = '#1b1030'; g.fillRect(0, 0, LW, LH);
-  for (let y = 0; y < LH; y += 6) for (let x = (y / 6 % 2) * 3; x < LW; x += 6) px(g, x, y, '#24173f');
-  // machine body
-  g.fillStyle = '#000'; g.fillRect(3, 27, 174, 230);
-  g.fillStyle = '#ff5fa2'; g.fillRect(4, 28, 172, 228);
-  g.fillStyle = '#ff8cc0'; g.fillRect(4, 28, 172, 2); g.fillRect(4, 28, 2, 228);
-  g.fillStyle = '#b8326e'; g.fillRect(4, 254, 172, 2); g.fillRect(174, 28, 2, 228);
-  // glass cavity
-  g.fillStyle = '#000'; g.fillRect(9, 33, 162, 216);
-  for (let y = 34; y < 248; y++) { const t = (y - 34) / 214; g.fillStyle = `rgb(${Math.round(42 + t * 18)},${Math.round(30 + t * 10)},${Math.round(74 + t * 20)})`; g.fillRect(10, y, 160, 1); }
-  for (let x = 14; x < 168; x += 10) for (let y = 44; y < 196; y += 10) px(g, x, y, '#3d2e68');
-  // rail
-  g.fillStyle = '#9a9ab8'; g.fillRect(10, RAIL - 4, 160, 3); g.fillStyle = '#d8d8ef'; g.fillRect(10, RAIL - 4, 160, 1);
-  // floor
-  g.fillStyle = '#463a6e'; g.fillRect(42, FLOOR, 128, 2); g.fillStyle = '#2b2150'; g.fillRect(10, FLOOR + 2, 160, 1);
-  // chute
-  g.fillStyle = '#000'; g.fillRect(10, CHUTE_TOP, 31, 48);
-  g.fillStyle = '#0e0820'; g.fillRect(11, CHUTE_TOP + 1, 29, 46);
-  g.fillStyle = '#000'; g.fillRect(40, CHUTE_TOP - 2, 4, 50);
-  g.fillStyle = '#ffcf40'; g.fillRect(41, CHUTE_TOP - 1, 2, 48);
-  // base
-  g.fillStyle = '#c23c7f'; g.fillRect(4, 252, 172, 4);
-  g.fillStyle = '#000'; g.fillRect(3, 257, 174, 63);
-  g.fillStyle = '#7a2453'; g.fillRect(4, 258, 172, 62);
-  g.fillStyle = '#000'; g.fillRect(8, 259, 164, 19);
-  g.fillStyle = '#1a1030'; g.fillRect(9, 260, 162, 17);
-});
-// chute front panel (drawn above prizes)
-const chuteFront = spr(LW, LH, g => {
-  g.fillStyle = '#000'; g.fillRect(10, 230, 31, 18);
-  g.fillStyle = '#ffcf40'; g.fillRect(11, 231, 29, 16);
-  for (let x = 11; x < 40; x += 4) { g.fillStyle = '#2b1d2f'; g.fillRect(x, 231, 2, 2); }
-  // arrow
-  g.fillStyle = '#2b1d2f'; g.fillRect(24, 235, 3, 5); g.fillRect(22, 239, 7, 1); g.fillRect(23, 240, 5, 1); g.fillRect(24, 241, 3, 1); g.fillRect(25, 242, 1, 1);
-});
+const MAXN = 15;
+const RB = ['#ff4a4a', '#ff9a3a', '#ffe04a', '#5adf6a', '#4ac8ff', '#6a6aff', '#c06aff'];
+const THEMES = [
+  { name: '糖果粉', body: '#ff5fa2', bl: '#ff8cc0', bd: '#b8326e', base: '#7a2453', base2: '#9a3066', bpat: 'dots', g0: '#2a1a4e', g1: '#3e2a72', dot: '#6a4aa8', motif: 'dots', rail: '#c8b0d8', floor: '#5a3a86', bulb: '#fff17a', bulbOff: '#a8326e', chute: '#ffcf40', hud: '#2b1d4a', page: '#1b1030', glow: '#ff5fa2' },
+  { name: '薄荷汽水', body: '#5fe0b8', bl: '#9af5d6', bd: '#2a9a7a', base: '#1f6a58', base2: '#2a8068', bpat: 'diag', g0: '#123a40', g1: '#1d5a5c', dot: '#8affe8', motif: 'bubbles', rail: '#b8d8d0', floor: '#2a6a64', bulb: '#eaffb0', bulbOff: '#2a8a6a', chute: '#ffe066', hud: '#14403f', page: '#0c2426', glow: '#5fe0b8' },
+  { name: '奶油布丁', body: '#ffd36b', bl: '#ffe8a0', bd: '#c8902a', base: '#8a5a2a', base2: '#a8742f', bpat: 'check', g0: '#3a2a22', g1: '#5e402c', dot: '#c89a64', motif: 'polka', rail: '#e8d8b8', floor: '#6a4a32', bulb: '#fff6c0', bulbOff: '#b8802a', chute: '#ff7a7a', hud: '#4a3224', page: '#2a1c14', glow: '#ffd36b' },
+  { name: '晴空云朵', body: '#6ab8ff', bl: '#a8d8ff', bd: '#2a78c8', base: '#1f4f8a', base2: '#2a64a8', bpat: 'zig', g0: '#1a3a6a', g1: '#3a6aa8', dot: '#e8f4ff', motif: 'clouds', rail: '#d0def0', floor: '#2a5a98', bulb: '#ffffff', bulbOff: '#3a78b8', chute: '#ffe066', hud: '#1a3560', page: '#0e1c36', glow: '#6ab8ff' },
+  { name: '樱花物语', body: '#ffb8d0', bl: '#ffdce8', bd: '#d86a98', base: '#8a3a5a', base2: '#a84a70', bpat: 'dots', g0: '#3a2040', g1: '#5e3068', dot: '#ffc8dc', motif: 'petals', rail: '#ecd8e2', floor: '#6a3a5a', bulb: '#ff4a6a', bulbOff: '#8a2a40', chute: '#ffcf40', hud: '#3a1e40', page: '#200f26', glow: '#ffb8d0' },
+  { name: '深海蓝', body: '#3a7ae0', bl: '#6aa0ff', bd: '#1a4aa0', base: '#12306a', base2: '#1a4088', bpat: 'zig', g0: '#0a1a40', g1: '#123a70', dot: '#5ac8ff', motif: 'fish', rail: '#9ab4d8', floor: '#1a4a8a', bulb: '#7affff', bulbOff: '#1a4aa0', chute: '#ffd040', hud: '#0e2250', page: '#08122a', glow: '#3a7ae0' },
+  { name: '森林抹茶', body: '#7ac060', bl: '#a8e088', bd: '#3a8a2a', base: '#2a5a22', base2: '#387030', bpat: 'diag', g0: '#14301c', g1: '#23502a', dot: '#7ad060', motif: 'leaves', rail: '#c0d0a8', floor: '#2e5a2a', bulb: '#f0ffa0', bulbOff: '#4a8a3a', chute: '#ffcf40', hud: '#183a20', page: '#0e2012', glow: '#7ac060' },
+  { name: '夕阳橘', body: '#ff9a4a', bl: '#ffc080', bd: '#c8601a', base: '#8a3a10', base2: '#a84a18', bpat: 'diag', g0: '#4a1a2a', g1: '#8a3a2a', dot: '#ffb060', motif: 'sun', rail: '#e8c8a8', floor: '#7a3418', bulb: '#fff0a0', bulbOff: '#c8601a', chute: '#fff7e0', hud: '#4a1c1a', page: '#2a0e10', glow: '#ff9a4a' },
+  { name: '薰衣草', body: '#b08af0', bl: '#d0b8ff', bd: '#704ac0', base: '#442a88', base2: '#5636a0', bpat: 'check', g0: '#1c1048', g1: '#2e1c70', dot: '#d0b8ff', motif: 'stars', rail: '#d0c8e8', floor: '#4a3290', bulb: '#ffe8ff', bulbOff: '#704ac0', chute: '#ffd860', hud: '#241454', page: '#120a30', glow: '#b08af0' },
+  { name: '雪夜', body: '#d8ecff', bl: '#ffffff', bd: '#88a8d0', base: '#3a5a8a', base2: '#4a6c9c', bpat: 'dots', g0: '#10203c', g1: '#24406a', dot: '#ffffff', motif: 'snow', rail: '#eef4fa', floor: '#3a5a8a', bulb: '#ff4a4a', bulbOff: '#6a8ab0', chute: '#ffd040', hud: '#162a4c', page: '#0a1424', glow: '#bfe0ff' },
+  { name: '复古街机', body: '#1c1c28', bl: '#ff3bd0', bd: '#08080c', base: '#10101a', base2: '#3be8ff', bpat: 'neon', g0: '#08081a', g1: '#16123e', dot: '#3be8ff', motif: 'neon', rail: '#7a7aa8', floor: '#2a2a58', bulb: ['#3be8ff', '#ff3bd0'], bulbOff: '#262648', chute: '#3be8ff', hud: '#0c0c1a', page: '#05050c', glow: '#ff3bd0' },
+  { name: '樱桃红', body: '#ff5a5a', bl: '#ff9a9a', bd: '#b82a2a', base: '#7a1a22', base2: '#a02a32', bpat: 'check', g0: '#3a1220', g1: '#5e1c2e', dot: '#ffb0b0', motif: 'polka', rail: '#e8c0c0', floor: '#6a2430', bulb: '#ffffff', bulbOff: '#a02a2a', chute: '#ffd040', hud: '#3a1420', page: '#200a12', glow: '#ff5a5a' },
+  { name: '黄金夜', body: '#e8b840', bl: '#fff0a0', bd: '#a07818', base: '#5a4010', base2: '#7a5a18', bpat: 'zig', g0: '#241a0a', g1: '#4a3414', dot: '#ffe080', motif: 'sparkle', rail: '#f4e4a8', floor: '#6a4c14', bulb: '#fff8c0', bulbOff: '#a07818', chute: '#ffffff', hud: '#2e220c', page: '#181006', glow: '#e8b840' },
+  { name: '星空', body: '#5a4ac8', bl: '#8a7af0', bd: '#2a2090', base: '#1c1458', base2: '#2a1c78', bpat: 'dots', g0: '#060820', g1: '#16124e', dot: '#ffffff', motif: 'cosmos', rail: '#aca4dc', floor: '#2a2278', bulb: '#a0e8ff', bulbOff: '#3a30a8', chute: '#ffd860', hud: '#120e3a', page: '#080618', glow: '#8a7af0' },
+  { name: '终极彩虹', body: '#2a2238', bl: '#ffffff', bd: '#0a0814', base: '#1a1228', base2: '#ffffff', bpat: 'rainbow', g0: '#1a0a30', g1: '#341c5c', dot: '#ffffff', motif: 'rainbow', rail: '#ffd860', floor: '#5a3a80', bulb: RB, bulbOff: '#3a2a50', chute: '#ffd860', hud: '#1e1230', page: '#0c0618', glow: '#ffd860' }
+];
+const themeOf = n => THEMES[clamp(n, 1, MAXN) - 1];
+const h2r = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mixc = (a, b, t) => { const A = h2r(a), B = h2r(b); return `rgb(${Math.round(A[0] + (B[0] - A[0]) * t)},${Math.round(A[1] + (B[1] - A[1]) * t)},${Math.round(A[2] + (B[2] - A[2]) * t)})`; };
+const rgba = (h, a) => { const c = h2r(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+function lcg(seed) { let v = seed | 0; return () => { v = (Math.imul(v, 1664525) + 1013904223) | 0; return ((v >>> 0) % 100000) / 100000; }; }
+
+function drawMotif(g, th, R, rect) {
+  const dot = th.dot, X0 = 12, X1 = 168, Y0 = 36, Y1 = 246, rx = () => X0 + R() * (X1 - X0), ry = (a = Y0, b = Y1) => a + R() * (b - a);
+  const m = th.motif;
+  if (m === 'dots') { for (let x = 14; x < 168; x += 10) for (let y = 44; y < 200; y += 10) rect(x, y, 1, 1, rgba(dot, .8)); }
+  else if (m === 'polka') { for (let r = 0, y = 46; y < 200; r++, y += 16) for (let x = 16 + (r % 2) * 10; x < 166; x += 20) { rect(x - 1, y, 3, 1, rgba(dot, .32)); rect(x, y - 1, 1, 3, rgba(dot, .32)); } }
+  else if (m === 'bubbles') { for (let i = 0; i < 26; i++) { const cx = rx(), cy = ry(), r = 2 + Math.floor(R() * 4); for (let a = 0; a < 6.28; a += .5) rect(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, rgba(dot, .4)); rect(cx - r * .4, cy - r * .5, 1, 1, rgba('#ffffff', .6)); } }
+  else if (m === 'clouds') { for (let i = 0; i < 5; i++) { const x = 16 + i * 30 + R() * 12, y = 52 + (i % 3) * 34 + R() * 10, w = 22 + R() * 14, c = rgba(dot, .26); rect(x, y, w, 3, c); rect(x + 3, y - 3, w - 9, 3, c); rect(x + w * .35, y - 5, w * .3, 2, c); } }
+  else if (m === 'petals') {
+    for (let x = 10; x < 80; x += 2) rect(x, 38 + Math.sin(x * .12) * 6 + (x - 10) * .12, 2, 1, rgba('#8a5a4a', .8));
+    for (let x = 14; x < 78; x += 9) { const y = 38 + Math.sin(x * .12) * 6 + (x - 10) * .12; rect(x, y - 2, 3, 3, rgba(dot, .9)); rect(x + 1, y - 1, 1, 1, '#fff7c0'); }
+    for (let i = 0; i < 46; i++) { const x = rx(), y = ry(), v = R() < .5; rect(x, y, v ? 2 : 1, v ? 1 : 2, rgba(dot, .5)); }
+  }
+  else if (m === 'fish') { for (let i = 0; i < 7; i++) { const x = rx(), y = ry(44, 170), c = rgba(dot, .4); rect(x, y, 6, 3, c); rect(x - 3, y - 1, 3, 5, c); rect(x + 4, y + 1, 1, 1, rgba('#fff', .8)); } for (let i = 0; i < 14; i++) { const cx = rx(), cy = ry(), r = 1 + Math.floor(R() * 2); for (let a = 0; a < 6.28; a += 1.2) rect(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, rgba('#bfefff', .45)); } }
+  else if (m === 'leaves') { for (const vx of [13, 166]) for (let y = Y0; y < 200; y++) rect(vx + Math.sin(y * .14) * 2, y, 1, 1, rgba('#3a8a3a', .8)); for (let i = 0; i < 20; i++) { const x = rx(), y = ry(40, 190), c = rgba(dot, .5); rect(x, y, 1, 3, c); rect(x - 1, y + 1, 3, 1, c); } }
+  else if (m === 'sun') { const cx = 90, cy = 126; for (let dy = -34; dy < 0; dy++) { const hw = Math.floor(Math.sqrt(34 * 34 - dy * dy)); if (((-dy) % 5) === 0 && dy > -28) continue; rect(cx - hw, cy + dy, hw * 2, 1, rgba(dot, .42)); } for (let i = 0; i < 4; i++) rect(12 + i * 4, cy + 2 + i * 6, 156 - i * 8, 1, rgba(dot, .26)); }
+  else if (m === 'stars') { for (let i = 0; i < 38; i++) { const x = Math.floor(rx()), y = Math.floor(ry(38, 200)), big = R() < .25; rect(x, y, 1, 1, rgba(dot, .95)); if (big) { rect(x - 1, y, 3, 1, rgba(dot, .55)); rect(x, y - 1, 1, 3, rgba(dot, .55)); } } for (let a = 0; a < 6.28; a += .1) { const px_ = 140 + Math.cos(a) * 9, py_ = 62 + Math.sin(a) * 9; if (Math.cos(a - .7) > -.1) rect(px_, py_, 2, 2, rgba('#fff7d0', .75)); } }
+  else if (m === 'snow') { for (let i = 0; i < 64; i++) { const x = Math.floor(rx()), y = Math.floor(ry()), big = R() < .2; rect(x, y, 1, 1, rgba('#ffffff', .8)); if (big) { rect(x - 1, y, 3, 1, rgba('#ffffff', .5)); rect(x, y - 1, 1, 3, rgba('#ffffff', .5)); } } }
+  else if (m === 'neon') { for (let y = 70; y < 246; y += 14) rect(10, y, 160, 1, rgba('#3be8ff', .2)); for (let x = 18; x < 170; x += 16) rect(x, 34, 1, 212, rgba('#ff3bd0', .14)); const cx = 90, cy = 108; for (let dy = -22; dy <= 22; dy++) { if (dy > 0 && (dy % 4) < 2) continue; const hw = Math.floor(Math.sqrt(484 - dy * dy)); rect(cx - hw, cy + dy, hw * 2, 1, rgba('#ff3bd0', .5)); } rect(10, 130, 160, 1, rgba('#3be8ff', .6)); }
+  else if (m === 'sparkle') { for (let i = 0; i < 26; i++) { const x = Math.floor(rx()), y = Math.floor(ry(38, 220)), L = R() < .3 ? 3 : 2; rect(x, y, 1, 1, rgba('#ffffff', .95)); for (let k = 1; k <= L; k++) { const c = rgba(dot, .8 - k * .2); rect(x - k, y, 1, 1, c); rect(x + k, y, 1, 1, c); rect(x, y - k, 1, 1, c); rect(x, y + k, 1, 1, c); } } }
+  else if (m === 'cosmos') {
+    for (let i = 0; i < 150; i++) { const a = R() * 6.28, r = Math.sqrt(R()) * 34; rect(52 + Math.cos(a) * r, 120 + Math.sin(a) * r * .8, 1, 1, rgba('#c06aff', .32)); }
+    for (let i = 0; i < 46; i++) rect(rx(), ry(), 1, 1, rgba('#ffffff', .4 + R() * .6));
+    for (let dy = -11; dy <= 11; dy++) { const hw = Math.floor(Math.sqrt(121 - dy * dy)); rect(132 - hw, 66 + dy, hw * 2, 1, rgba('#8a7af0', .7)); }
+    for (let a = 0; a < 6.28; a += .08) { const x = 132 + Math.cos(a) * 19, y = 66 + Math.sin(a) * 5; if (!(Math.sin(a) < 0 && Math.abs(Math.cos(a)) < .6)) rect(x, y, 1, 1, rgba('#ffd860', .85)); }
+  }
+  else if (m === 'rainbow') { for (let y = 34; y < 247; y++) for (let i = 0; i < 7; i++) { const x = 10 + ((y * .8 + i * 26) % 180); rect(x, y, Math.min(8, 170 - x), 1, rgba(RB[i], .13)); } for (let i = 0; i < 20; i++) { const x = Math.floor(rx()), y = Math.floor(ry(38, 200)); rect(x, y, 1, 1, '#fff'); rect(x - 1, y, 3, 1, rgba('#fff', .4)); rect(x, y - 1, 1, 3, rgba('#fff', .4)); } }
+}
+function drawBase(g, th, rect) {
+  const c = th.base2, x0 = 4, y0 = 258, W_ = 172, H_ = 62, bp = th.bpat;
+  if (bp === 'dots') { for (let y = y0 + 4; y < y0 + H_; y += 6) for (let x = x0 + ((y / 6 | 0) % 2) * 4 + 2; x < x0 + W_ - 2; x += 8) rect(x, y, 2, 2, c); }
+  else if (bp === 'diag') { for (let y = 0; y < H_; y++) for (let k = 0; k < 16; k++) { const x = x0 + ((y + k * 12) % W_); rect(x, y0 + y, Math.min(4, x0 + W_ - x), 1, c); } }
+  else if (bp === 'check') { for (let ty = 0; ty * 6 < H_; ty++) for (let tx = 0; tx * 6 < W_; tx++) if ((tx + ty) % 2) rect(x0 + tx * 6, y0 + ty * 6, Math.min(6, W_ - tx * 6), Math.min(6, H_ - ty * 6), c); }
+  else if (bp === 'zig') { for (let r = 0; r < 6; r++) for (let x = x0; x < x0 + W_ - 3; x += 4) rect(x, y0 + 4 + r * 10 + (((x - x0) / 4 | 0) % 2 ? 0 : 3), 4, 2, c); }
+  else if (bp === 'neon') { for (let y = y0; y < y0 + H_; y += 9) rect(x0, y, W_, 1, rgba('#3be8ff', .4)); for (let x = x0; x < x0 + W_; x += 12) rect(x, y0, 1, H_, rgba('#ff3bd0', .3)); }
+  else if (bp === 'rainbow') { for (let y = 0; y < H_; y++) rect(x0, y0 + y, W_, 1, rgba(RB[((y / 9) | 0) % 7], .4)); }
+}
+function makeBg(th, n) {
+  return spr(LW, LH, g => {
+    const R = lcg(n * 977 + 13), rect = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+    rect(0, 0, LW, LH, th.page);
+    const wall = mixc(th.page, th.body, .14);
+    for (let y = 0; y < LH; y += 6) for (let x = (y / 6 % 2) * 3; x < LW; x += 6) rect(x, y, 1, 1, wall);
+    // machine body
+    rect(3, 27, 174, 230, '#000');
+    if (th.motif === 'rainbow') { for (let y = 28; y < 256; y++) rect(4, y, 172, 1, RB[Math.min(6, Math.floor((y - 28) / 32.6))]); rect(4, 28, 172, 1, '#fff'); }
+    else { rect(4, 28, 172, 228, th.body); rect(4, 28, 172, 2, th.bl); rect(4, 28, 2, 228, th.bl); rect(4, 254, 172, 2, th.bd); rect(174, 28, 2, 228, th.bd); }
+    // glass
+    rect(9, 33, 162, 216, '#000');
+    for (let y = 34; y < 248; y++) rect(10, y, 160, 1, mixc(th.g0, th.g1, (y - 34) / 214));
+    drawMotif(g, th, R, rect);
+    // rail, floor, chute
+    rect(10, RAIL - 4, 160, 3, th.rail); rect(10, RAIL - 4, 160, 1, mixc(th.rail, '#ffffff', .6));
+    rect(42, FLOOR, 128, 2, th.floor); rect(10, FLOOR + 2, 160, 1, mixc(th.floor, '#000000', .45));
+    rect(10, CHUTE_TOP, 31, 48, '#000'); rect(11, CHUTE_TOP + 1, 29, 46, mixc(th.page, '#000000', .35));
+    rect(40, CHUTE_TOP - 2, 4, 50, '#000'); rect(41, CHUTE_TOP - 1, 2, 48, th.chute);
+    // base
+    rect(4, 252, 172, 4, mixc(th.body === '#1c1c28' || th.motif === 'rainbow' ? th.base2 : th.body, '#000000', .25));
+    rect(3, 257, 174, 63, '#000'); rect(4, 258, 172, 62, th.base);
+    drawBase(g, th, rect);
+    rect(8, 259, 164, 19, '#000'); rect(9, 260, 162, 17, mixc(th.hud, '#000000', .35));
+  });
+}
+function makeFront(th) {
+  return spr(LW, LH, g => {
+    const rect = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+    rect(10, 230, 31, 18, '#000'); rect(11, 231, 29, 16, th.chute);
+    for (let x = 11; x < 40; x += 4) rect(x, 231, 2, 2, '#2b1d2f');
+    rect(24, 235, 3, 5, '#2b1d2f'); rect(22, 239, 7, 1, '#2b1d2f'); rect(23, 240, 5, 1, '#2b1d2f'); rect(24, 241, 3, 1, '#2b1d2f'); rect(25, 242, 1, 1, '#2b1d2f');
+  });
+}
+const THEME_CACHE = {};
+function getBg(n) { const k = clamp(n, 1, MAXN); if (!THEME_CACHE[k]) { const th = themeOf(k); THEME_CACHE[k] = { bg: makeBg(th, k), fr: makeFront(th), th }; } return THEME_CACHE[k]; }
+function applyTheme(n) {
+  const th = themeOf(n), hudEl = document.querySelector('.hud');
+  hudEl.style.background = th.hud;
+  game.style.background = th.page;
+  game.style.boxShadow = `0 0 0 4px #000,0 0 40px ${rgba(th.glow, .5)},0 20px 60px rgba(0,0,0,.6)`;
+  document.body.style.background = `radial-gradient(ellipse at 50% 40%, ${mixc(th.page, th.glow, .25)}, ${mixc(th.page, '#000000', .6)} 72%)`;
+  document.documentElement.style.background = mixc(th.page, '#000000', .6);
+  const mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.content = th.page;
+}
 
 // ============================================================ data
 const ACC = [
@@ -340,13 +411,15 @@ const ACC = [
 const ACCM = Object.fromEntries(ACC.map(a => [a.id, a]));
 const BOSSES = [
   { id: 'loose', name: '松爪机', desc: '爪力 -1，稍微容易滑落' },
-  { id: 'shaky', name: '狂摇机', desc: '爪子摆动快 30%' },
+  { id: 'shaky', name: '狂摇机', desc: '爪子摆动快 10%' },
   { id: 'eater', name: '吞币机', desc: '本台少 1 枚币' },
-  { id: 'rocky', name: '石头山', desc: '约三成奖品换成石头' }
+  { id: 'rocky', name: '石头山', desc: '约四分之一奖品是石头' }
 ];
-const TARGETS = [20, 30, 42, 55, 68, 82, 98, 115];
-const targetOf = n => n <= 8 ? TARGETS[n - 1] : Math.round(115 * Math.pow(1.2, n - 8));
-const isBoss = n => n % 4 === 0;
+const FINALBOSS = { id: 'final', name: '终极大机', desc: '爪力 -1，但藏了 3 件稀有奖品' };
+const ALLBOSS = BOSSES.concat([FINALBOSS]);
+const TARGETS = [14, 20, 27, 34, 42, 48, 54, 60, 67, 78, 84, 90, 97, 104, 118];
+const targetOf = n => TARGETS[clamp(n, 1, MAXN) - 1];
+const isBoss = n => n === 5 || n === 10 || n === MAXN;
 
 // ============================================================ save / load
 const RUN_KEY = 'cr_run_v1';
@@ -360,14 +433,14 @@ function saveRun(phase) {
   });
 }
 function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} }
-function loadRun() { const d = store.get(RUN_KEY, null); return d && d.v === 1 && d.run && d.M ? d : null; }
+function loadRun() { const d = store.get(RUN_KEY, null); return d && d.v === 1 && d.run && d.M && d.M.n <= MAXN ? d : null; }
 function resumeRun(d) {
   run = d.run;
   const m = d.M;
-  M = { n: m.n, target: m.target, score: m.score, coins: m.coins, bin: m.bin || [], kinds: m.kinds || {}, combo: m.combo || 0, refunded: !!m.refunded, lastCoin: !!m.lastCoin, boss: m.boss ? BOSSES.find(b => b.id === m.boss) || null : null, prizes: (m.prizes || []).map(q => ({ k: q.k, x: q.x, y: q.y, vy: 0 })) };
+  M = { n: m.n, target: m.target, score: m.score, coins: m.coins, bin: m.bin || [], kinds: m.kinds || {}, combo: m.combo || 0, refunded: !!m.refunded, lastCoin: !!m.lastCoin, boss: m.boss ? ALLBOSS.find(b => b.id === m.boss) || null : null, prizes: (m.prizes || []).map(q => ({ k: q.k, x: q.x, y: q.y, vy: 0 })) };
   falling = []; parts = [];
   claw = { x: (PIT_L + PIT_R) / 2, y: RAIL, open: 1, ph: Math.random() * 6, st: 'aim', carry: [], t: 0, slipAt: null };
-  hud();
+  hud(); applyTheme(M.n);
   if (d.phase === 'over') {
     state = 'over'; showOver();
   } else if (d.phase === 'shop') {
@@ -385,12 +458,12 @@ function resumeRun(d) {
 let run, M, claw, falling = [], parts = [], state = 'menu', tm = 0;
 const has = id => run.acc.includes(id);
 function stats() {
-  const s = { grip: 5, R: 9, sway: 1.7, coins: 7 };
+  const s = { grip: 5, R: 9, sway: 1.7, coins: 7 + (M && M.n >= 6 ? 1 : 0) };
   if (has('spring')) s.grip += 2;
   if (has('tri')) s.R *= 1.4;
   if (has('motor')) s.sway *= .7;
   if (has('coin')) s.coins += 1;
-  if (M && M.boss) { if (M.boss.id === 'loose') s.grip -= 1; if (M.boss.id === 'shaky') s.sway *= 1.3; if (M.boss.id === 'eater') s.coins -= 1; }
+  if (M && M.boss) { if (M.boss.id === 'loose' || M.boss.id === 'final') s.grip -= 1; if (M.boss.id === 'shaky') s.sway *= 1.1; if (M.boss.id === 'eater') s.coins -= 1; }
   return s;
 }
 function newRun() {
@@ -399,7 +472,7 @@ function newRun() {
 }
 function newMachine() {
   const n = run.n;
-  M = { n, target: targetOf(n), score: 0, coins: 0, prizes: [], bin: [], kinds: {}, combo: 0, refunded: false, boss: isBoss(n) ? pick(BOSSES) : null };
+  M = { n, target: targetOf(n), score: 0, coins: 0, prizes: [], bin: [], kinds: {}, combo: 0, refunded: false, boss: isBoss(n) ? (n === MAXN ? FINALBOSS : pick(BOSSES)) : null };
   M.coins = stats().coins;
   const pool = ['duck', 'duck', 'frog', 'frog', 'cat', 'cat', 'bunny', 'bunny', 'peng', 'bear', 'bear'];
   const N = 22 + Math.min(8, n);
@@ -407,10 +480,11 @@ function newMachine() {
   for (let i = 0; i < N; i++) {
     const r = Math.random();
     let k = r < .07 ? pick(['star', 'egg']) : r < .14 ? 'big' : r < .2 ? 'rock' : pick(pool);
-    if (M.boss && M.boss.id === 'rocky' && Math.random() < .3) k = 'rock';
+    if (M.boss && M.boss.id === 'rocky' && Math.random() < .25) k = 'rock';
     kinds.push(k);
   }
   if (has('lamp')) kinds.push(pick(['star', 'egg']), pick(['star', 'egg', 'star']));
+  if (M.boss && M.boss.id === 'final') kinds.push(pick(['star', 'egg']), pick(['star', 'egg']), 'egg');
   kinds.sort(() => Math.random() - .5);
   // heavy stuff tends to sit at the bottom
   kinds.sort((a, b) => (KINDS[b].big ? 1 : 0) - (KINDS[a].big ? 1 : 0));
@@ -423,8 +497,9 @@ function newMachine() {
   claw = { x: (PIT_L + PIT_R) / 2, y: RAIL, open: 1, ph: Math.random() * 6, st: 'aim', carry: [], t: 0, slipAt: null };
   state = 'play';
   hud();
-  if (M.boss) banner('BOSS · ' + M.boss.name, M.boss.desc);
-  else banner(`第 ${n} 台`, `目标 ${M.target} 分 · ${M.coins} 枚币`);
+  applyTheme(n);
+  if (M.boss) banner((n === MAXN ? 'FINAL BOSS · ' : 'BOSS · ') + M.boss.name, `${M.boss.desc} · 目标 ${M.target}`);
+  else banner(`第 ${n} 台 · ${themeOf(n).name}`, `目标 ${M.target} 分 · ${M.coins} 枚币`);
   saveRun('play');
 }
 function heapTop(x, h, list, except) {
@@ -444,7 +519,7 @@ function settle() {
 // ============================================================ HUD / UI
 function hud() {
   if (!M) return;
-  $('#hMach').innerHTML = `第 ${M.n} 台<b class="${M.boss ? 'boss' : ''}">${M.boss ? M.boss.name : (M.n > 8 ? '无尽' : 'MACHINE')}</b>`;
+  $('#hMach').innerHTML = `${M.n}/${MAXN} 台<b class="${M.boss ? 'boss' : ''}">${M.boss ? M.boss.name : themeOf(M.n).name}</b>`;
   $('#hScore').innerHTML = `${M.score}<i>/${M.target}</i>`;
   $('#hBar').style.width = Math.min(100, M.score / M.target * 100) + '%';
   $('#hCoin').textContent = '●×' + M.coins;
@@ -559,11 +634,19 @@ function clearMachine() {
   const base = 3, left = M.coins, interest = Math.min(5, Math.floor(run.money / 5)), pig = has('piggy') ? 3 : 0, boss = M.boss ? 3 : 0;
   const total = base + left + interest + pig + boss;
   run.money += total; hud();
-  $('#clrT').textContent = M.n === 8 ? '🏆 通关全部 8 台！' : `第 ${M.n} 台 通关！`;
+  const fin = M.n === MAXN;
+  $('#clrT').textContent = fin ? `🏆 通关全部 ${MAXN} 台！` : `第 ${M.n} 台 通关！`;
   $('#clrB').innerHTML = `过关奖励<b>$${base}</b><br>剩余币 ×${left}<b>$${left}</b><br>利息（每$5得$1）<b>$${interest}</b>` + (boss ? `<br>BOSS 奖励<b>$${boss}</b>` : '') + (pig ? `<br>🐷 存钱罐<b>$${pig}</b>` : '') + `<br>合计<b>$${total}</b>`;
-  if (M.n === 8) store.set('cr_won', true);
+  if (fin) store.set('cr_won', true);
   const best = store.get('cr_best', 0); if (M.n > best) store.set('cr_best', M.n);
-  rerollCost = 2; rollOffers(); state = 'shop'; saveRun('shop');
+  if (fin) {
+    state = 'won'; clearRun();
+    $('#clrB').innerHTML += `<br>—————<br>全程抓到<b>${run.grabbed} 只</b><br>总得分<b>${run.total}</b><br>最后配件<b>${run.acc.map(id => ACCM[id].ic).join(' ') || '空手'}</b>`;
+    $('#bShop').textContent = '🔄 再玩一轮'; $('#bShare2').classList.remove('hide');
+  } else {
+    rerollCost = 2; rollOffers(); state = 'shop'; saveRun('shop');
+    $('#bShop').textContent = '去小卖部'; $('#bShare2').classList.add('hide');
+  }
   show('#ovClear');
 }
 let offers = [], rerollCost = 2;
@@ -628,7 +711,7 @@ function retryMachine(mode) {
 async function share() {
   const url = location.href.split('#')[0].split('?')[0];
   const n = M ? M.n : 1;
-  const text = `我在「抓抓乐」闯到第 ${n} 台娃娃机，抓了 ${run ? run.grabbed : 0} 只！你能抓过我吗？`;
+  const text = state === 'won' ? `我在「抓抓乐」通关了全部 ${MAXN} 台娃娃机，抓了 ${run.grabbed} 只！你能打败终极大机吗？` : `我在「抓抓乐」闯到第 ${n} 台娃娃机，抓了 ${run ? run.grabbed : 0} 只！你能抓过我吗？`;
   if (navigator.share) { try { await navigator.share({ title: '抓抓乐 CLAW ROGUE', text, url }); } catch (e) {} }
   else { try { await navigator.clipboard.writeText(text + ' ' + url); $('#ovrD').textContent = '链接已复制！'; } catch (e) {} }
 }
@@ -713,9 +796,9 @@ function drawClaw() {
   line(x, y + 6, x, y + 12 + (1 - o) * 2, '#c9c9e0');
 }
 function draw() {
-  ctx.drawImage(bgCanvas, 0, 0);
+  const TB = getBg(M ? M.n : 1); ctx.drawImage(TB.bg, 0, 0);
   // blinking bulbs
-  for (let i = 0; i < 21; i++) { const on = (Math.floor(tm * 4) + i) % 3 === 0; ctx.fillStyle = '#000'; ctx.fillRect(7 + i * 8, 28, 4, 4); ctx.fillStyle = on ? '#fff17a' : '#a8326e'; ctx.fillRect(8 + i * 8, 29, 2, 2); }
+  for (let i = 0; i < 21; i++) { const on = (Math.floor(tm * 4) + i) % 3 === 0; ctx.fillStyle = '#000'; ctx.fillRect(7 + i * 8, 28, 4, 4); ctx.fillStyle = on ? (Array.isArray(TB.th.bulb) ? TB.th.bulb[i % TB.th.bulb.length] : TB.th.bulb) : TB.th.bulbOff; ctx.fillRect(8 + i * 8, 29, 2, 2); }
   if (M) {
     for (const p of M.prizes) if (!p.held) drawPrize(p);
     for (const f of falling) drawPrize({ k: f.p.k, x: f.x, y: f.y });
@@ -723,7 +806,7 @@ function draw() {
     // aim guide
     if (claw.st === 'aim' && state === 'play') { ctx.fillStyle = 'rgba(255,255,255,.12)'; for (let y = RAIL + 18; y < FLOOR; y += 4) ctx.fillRect(Math.round(claw.x), y, 1, 2); }
   }
-  ctx.drawImage(chuteFront, 0, 0);
+  ctx.drawImage(TB.fr, 0, 0);
   // glass shine
   ctx.fillStyle = 'rgba(255,255,255,.05)';
   for (let i = 0; i < 26; i++) { ctx.fillRect(120 + i, 40 + i * 6, 3, 6); ctx.fillRect(134 + i, 40 + i * 6, 1, 6); }
@@ -745,7 +828,8 @@ $('#bStart').onclick = () => {
   clearRun(); show(null); newRun();
 };
 $('#bCont').onclick = () => { const d = loadRun(); if (!d) return; unlock(); resumeRun(d); };
-$('#bShop').onclick = () => { openShop(); };
+$('#bShop').onclick = () => { if (state === 'won') { clearRun(); show(null); newRun(); } else openShop(); };
+$('#bShare2').onclick = share;
 $('#bReroll').onclick = () => { if (run.money < rerollCost) return; run.money -= rerollCost; rerollCost++; rollOffers(); S.buy(); renderShop(); hud(); saveRun('shop'); };
 $('#bNext').onclick = () => { show(null); run.n++; newMachine(); };
 $('#bRetry').onclick = () => { if (!confirm('从第 1 台重新开始？当前的配件和进度都会清空。')) return; clearRun(); show(null); newRun(); };
@@ -759,7 +843,7 @@ run = { n: 1, money: 4, acc: [], duck: 0, grabbed: 0, total: 0 };
 M = { n: 1, target: 30, score: 0, coins: 6, prizes: [], bin: [], kinds: {}, combo: 0 };
 for (let i = 0; i < 18; i++) { const k = pick(['duck', 'frog', 'cat', 'bunny', 'peng', 'bear', 'star', 'big']); const h = HALF(k), x = rand(PIT_L + h, PIT_R - h); M.prizes.push({ k, x, y: heapTop(x, h, M.prizes) - SIZE(k) + 2 }); }
 claw = { x: 100, y: RAIL, open: 1, ph: 0, st: 'aim', carry: [], t: 0 };
-state = 'menu';
+state = 'menu'; applyTheme(1);
 (() => {
   const d = loadRun();
   if (!d) return;
